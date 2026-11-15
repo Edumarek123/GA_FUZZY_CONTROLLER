@@ -2,71 +2,109 @@
 
 # Genetic Algorithm Tuned Fuzzy Controller
 
-**An embedded fuzzy controller with genetic-algorithm-based centroid tuning.**
+**An ESP32 motor-control experiment combining fuzzy logic, evolutionary tuning, and an automated brake.**
 
-![Platform](https://img.shields.io/badge/platform-Arduino%20%2F%20microcontroller-00979D?logo=arduino&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-ESP32-E7352C?logo=espressif&logoColor=white)
 ![Control](https://img.shields.io/badge/control-fuzzy%20logic-6f42c1)
 ![Optimization](https://img.shields.io/badge/optimization-genetic%20algorithm-0A7F8C)
 ![Status](https://img.shields.io/badge/status-experimental-orange)
 
 </div>
 
+## Contents
+
+- [Overview](#overview)
+- [System architecture](#system-architecture)
+- [Experiment configuration](#experiment-configuration)
+- [Hardware pinout](#hardware-pinout)
+- [Requirements](#requirements)
+- [Setup](#setup)
+- [Experimental procedure](#experimental-procedure)
+- [Safety and limitations](#safety-and-limitations)
+- [License](#license)
+
 ## Overview
 
-This project combines fuzzy logic control with a genetic algorithm used to tune membership-function centroids. It targets microcontroller-based control applications and was implemented on an experimental bench involving a DC motor.
+This project combines a fuzzy-logic controller with a genetic algorithm that searches for membership-function centroid configurations. The experimental setup controls a DC motor and uses a servo-actuated brake to make repeated tests more consistent.
 
-The setup also includes a servo-driven brake, designed to automate the braking process and make tests and simulations more consistent.
+The current sketch configures a population of 20 individuals, runs an evolutionary loop for up to 50 generations, and evaluates each individual against the motor test bench.
 
-## System concept
+## System architecture
 
-The documented project combines the following elements:
-
-- **Fuzzy controller:** maps observed process conditions to a control action.
-- **Genetic algorithm:** searches for membership-function centroid configurations.
-- **DC motor test bench:** provides the physical system under control.
-- **Servo-actuated brake:** supports repeatable braking during experiments.
-
-## Repository contents
-
-```text
-.
-├── FUZZY_Controller_GA.ino
-├── src/
-└── README.md
+```mermaid
+flowchart TD
+    A[Reference speed] --> C[Fuzzy controller]
+    B[Encoder feedback] --> C
+    C --> D[PWM motor driver]
+    D --> E[DC motor]
+    E --> B
+    E --> F[Servo brake]
+    C --> G[Fitness / accumulated error]
+    G --> H[Genetic algorithm]
+    H --> C
 ```
 
-## Technology and methods
+The diagram summarizes the experiment's intended relationship between the controller, motor bench, feedback, and evolutionary tuning.
 
-- Embedded C/C++ / Arduino sketch
-- Fuzzy logic
-- Genetic algorithms
-- DC motor control
-- Servo motor actuation
+## Experiment configuration
 
-## Getting started
+Values defined in the sketch include:
 
-### Requirements
+| Parameter | Value |
+|---|---:|
+| Population size | 20 |
+| Maximum generation index | 50 |
+| Mutation setting passed to GA | 10 |
+| Sampling interval | 80 ms |
+| PWM frequency | 1 kHz |
+| PWM resolution | 10 bits |
+| Encoder pulses per revolution | 3 |
 
-- Arduino-compatible development environment
-- Compatible microcontroller
-- DC motor and driver suitable for the test setup
-- Servo motor and mechanical brake arrangement
-- Sensors and wiring matching the implementation
+The source passes `10` as the genetic algorithm's mutation setting and comments it as a 10% mutation chance. Confirm the library's interpretation before changing it.
 
-The exact board, pin mapping, sensor model, and wiring must be read from the sketch and source files before connecting hardware.
+## Hardware pinout
 
-### Inspect the implementation
+| Signal | ESP32 GPIO |
+|---|---:|
+| Motor PWM | 25 |
+| Motor direction | 33 |
+| Encoder | 22 |
+| Brake servo | 32 |
 
-Open `FUZZY_Controller_GA.ino` and review the files under `src/`. Confirm the hardware interfaces and safety limits before running the controller on a physical setup.
+The sketch uses `ESP32Servo` and the ESP32 LEDC PWM interface.
 
-## Experimental considerations
+## Requirements
 
-Controller quality depends on the plant, sensors, sampling, actuator limits, and tuning procedure. The repository describes an experimental implementation; it does not provide a general guarantee of stability or performance on other hardware.
+- ESP32 development board
+- DC motor and compatible driver
+- Encoder matching the pulse configuration
+- Servo and mechanical brake assembly
+- Arduino-compatible ESP32 toolchain
+- `ESP32Servo` library
 
-## Project status
+## Setup
 
-Experimental embedded-control project.
+1. Clone the repository.
+2. Open `FUZZY_Controller_GA.ino` in the Arduino IDE.
+3. Install the required ESP32 board support and `ESP32Servo`.
+4. Inspect the implementation under `src/`.
+5. Verify motor-driver wiring, encoder signal levels, servo travel, and power supply.
+6. Upload only after confirming the hardware configuration and safe operating limits.
+
+The sketch uses LEDC APIs associated with particular ESP32 Arduino-core versions; check compatibility with your installed core.
+
+## Experimental procedure
+
+The sketch runs each individual on the motor bench, accumulates error and control effort, and then calls the genetic algorithm's iteration method. The brake servo is used to stop the motor between trials.
+
+For meaningful comparisons, log the reference profile, controller parameters, measured speed, accumulated error, control effort, generation, and individual index.
+
+## Safety and limitations
+
+A motor and mechanical brake can create pinch, heat, and electrical hazards. Begin with conservative PWM limits, a secure test fixture, a physical emergency stop, and a current-limited supply. Do not run the mechanism unattended.
+
+This is an experimental controller, not a safety-certified motor-control system.
 
 ## License
 
-No license file was identified in the repository. Contact the author before redistributing or reusing this project.
+No `LICENSE` file is currently included. Unless a license is added, reuse and redistribution permissions are not granted by this repository.
